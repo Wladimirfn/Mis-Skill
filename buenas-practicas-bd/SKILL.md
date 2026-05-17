@@ -11,6 +11,34 @@ date_added: "2026-05-16"
 
 Usá esta skill antes de cualquier cambio relacionado con bases de datos: Supabase, Postgres, Prisma, migraciones, RLS, funciones SQL/RPC, triggers, policies, roles, permisos o seeds.
 
+## Overview operativo en 11 pasos
+
+1. Entender repo y stack real antes de programar.
+2. Confirmar tablas, columnas, rutas, helpers y contratos existentes.
+3. Clasificar datos: backend-only, frontend con RLS o público real.
+4. Diseñar primero; no mezclar diseño, migración, backfill, índices, comportamiento y frontend.
+5. Crear proposals/checks SELECT-only antes de tocar datos o schema.
+6. Aplicar cambios DB con rollback, grants mínimos y verificación.
+7. Backfillear por fases, con conteos, mismatches y demo/test controlados.
+8. Diseñar índices desde queries reales antes de cambiar lecturas.
+9. Migrar backend gradualmente con fallback legacy y diagnóstico seguro.
+10. Recién después cambiar comportamiento/frontend si está aprobado y testeado.
+11. Entregar evidencia: archivos, lecturas, tests, no-touch, riesgos, rollback y siguiente paso.
+
+## Mini índice rápido
+
+- **Prácticas 1–4**: funciones RPC, tablas/RLS, grants mínimos y migrations verificables.
+- **Prácticas 5–8**: inventario RLS, tenant/auth, modelo base multiempresa y seed/backfill tenant.
+- **Prácticas 9–13**: hardening backend-only, resolver tenant, diagnóstico y contrato `req.tenantContext`.
+- **Prácticas 14–18**: validación BPI pasiva, `empresa_id nullable`, planning y backfill Fase A/B.
+- **Prácticas 19–25**: backfill BPI agua por lotes, rollback y escalamiento seguro.
+- **Prácticas 26–30**: revisión final, índices, diseño backend `empresa_id`, helper aislado y diagnóstico-only.
+- **Prácticas 31–34**: protocolo IA, no inventar contratos, separar etapas y patrón para nuevas funciones.
+- **Prácticas 35–37**: uploads/integraciones, plantilla de entrega y regla multiempresa.
+- **Prácticas 38–39**: checklist Supabase y optimización Postgres basada en queries reales.
+- **Guía rápida**: orden operativo para aplicar la skill sin leer todo el historial.
+- **Caso completo**: ejemplo de camino legacy → multi-tenant operativo.
+
 ## Regla de uso obligatoria
 
 Antes de modificar o crear objetos de base de datos:
@@ -2102,6 +2130,24 @@ Esta skill es larga porque conserva historial y decisiones. Para usarla rápido,
 - Si toca multiempresa: **tenant backend, no frontend**.
 - Si toca uploads: **validar archivo, tamaño, columnas y logs seguros**.
 - Si cambia comportamiento: **diseño + tests + fallback**.
+
+## Caso completo: legacy empresa text → multi-tenant operativo
+
+Ejemplo de camino seguro para migrar un sistema legacy que usa `empresa` text hacia multi-tenant con `empresa_id`, sin romper producción:
+
+1. **Inventario inicial**: leer repo, rutas, helpers, tests, schema y migrations. Usar Prácticas 31–32.
+2. **Clasificación Supabase**: decidir backend-only vs frontend/RLS, revisar grants, funciones y exposure. Usar Prácticas 1–4 y 38.
+3. **Diseño tenant/auth**: definir `empresas`, membresías, fallback legacy y qué no se toca. Usar Prácticas 5–8 y 37.
+4. **Base estructural**: agregar tablas/columnas con migrations aprobadas, rollback y checks. Usar Prácticas 3, 4, 15 y 16.
+5. **Backfill gradual**: poblar `empresa_id` por fases/lotes con checks SELECT-only, mismatches y demo/test controlados. Usar Prácticas 17–25.
+6. **Revisión final**: confirmar conteos, rollback, demo/test y que el sistema sigue usando `empresa` text. Usar Práctica 26.
+7. **Índices por diseño**: revisar queries reales y proponer índices `empresa_id` sin crearlos todavía. Usar Prácticas 27, 38 y 39.
+8. **Helper backend aislado**: implementar resolver testeable que derive `empresa_id` desde backend, no frontend. Usar Prácticas 28–29.
+9. **Diagnóstico-only**: conectar helper para observar warnings sin cambiar queries ni responses. Usar Práctica 30.
+10. **Lectura dual futura**: comparar conteos por `empresa` text vs `empresa_id` sin cambiar frontend. Usar Prácticas 33, 36 y 39.
+11. **Cambio efectivo gradual**: migrar endpoints pequeños con fallback, tests, rollback y no-touch frontend/RLS salvo aprobación separada. Usar Prácticas 33, 34, 37 y 38.
+
+Regla del caso completo: cada paso debe terminar con evidencia, tests/checks y un prompt/plan para el siguiente paso; nunca ejecutar el siguiente paso por impulso.
 
 ## Cómo actualizar esta skill
 
